@@ -9,14 +9,14 @@
                             <circle cx="8" cy="8" r="8" fill="currentColor"></circle>
                         </svg>
                     </span>
-                    <img src="https://i.pravatar.cc/150?img=11" alt=""
+                    <img v-if="user != null" :src="`https://ui-avatars.com/api/?name=${user.name}`" alt=""
                         class="w-10 sm:w-16 h-10 sm:h-16 rounded-full">
                 </div>
                 <div class="flex flex-col leading-tight">
                     <div class="text-2xl mt-1 flex items-center">
-                        <span class="text-gray-700 mr-3">Anderson Vanhron</span>
+                        <span v-if="user != null" class="text-gray-700 mr-3">{{ user.name }}</span>
                     </div>
-                    <span class="text-lg text-gray-600">Junior Developer</span>
+                    <span class="text-lg text-gray-600">Online</span>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <Messages :chats="chats" />
+        <Messages :chats="chats" :isTyping="isTyping" :name="name" />
 
         <div class="border-t-2 border-gray-200 px-4 pt-4 mb-2 sm:mb-0">
             <div class="relative flex">
@@ -125,7 +125,10 @@
                 message: '',
                 chats: {
                     message: []
-                }
+                },
+                user: null,
+                isTyping: false,
+                name: null
             }
         },
         methods: {
@@ -136,10 +139,11 @@
 
                     this.chats.message.push({
                         message: this.message,
-                        position: 'right'
+                        position: 'right',
+                        user: this.user
                     }) // myself
 
-                    // Send AJAX on the ChatEvent
+                    // Send AJAX on the /send route to fire ChatEvent
                     axios.post('/send', {
                             message: this.message
                         })
@@ -159,25 +163,54 @@
         mounted() {
 
             // Listen to channel `chat` of `ChatEvent` Class from Laravel.
-
+            // Listen if ChatEvent is fired from /send route.
             Echo.private(`chat`)
                 .listen('ChatEvent', (e) => {
+
                     this.chats.message.push({
                         message: e.message,
-                        position: 'left'
+                        position: 'left',
+                        user: e.user
                     }) // broadcasted to other person
 
                     console.log('broadcasted')
+                })
+                .listenForWhisper('typing', (e) => {
+                    // Listen and receive the fired whisper `typing`
+
+                    // This will be broadcasted to other person that you are typing or not.
+
+                    console.log('Other person is typing')
+
+                    // If you typing, then this will be broadcasted to the other person's component that you are typing a message.
+                    if(e.messageLength > 0) {
+                        this.isTyping = true
+                        this.name = e.name // This is your name that will sent to other person
+                    } else {
+                        this.isTyping = false // Is Not Typing
+                        this.name = null
+                    }
+
                 });
+
+            // get the current user
+            axios.get('/user')
+                .then(response => {
+                    this.user = response.data
+                })
+                .catch(e => console.error(e))
+
+
         },
         watch: {
             message(newValue) {
-                // Check for message length
-                if (newValue.length) {
-                    console.log('typing');
-                } else {
-                    console.log('not typing');
-                }
+
+                // If message value changes fire a whisper `typing`
+                Echo.private(`chat`)
+                    .whisper('typing', {
+                        name: this.user.name,
+                        messageLength: newValue.length
+                    });
             }
         }
 

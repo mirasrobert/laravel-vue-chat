@@ -5227,7 +5227,10 @@ __webpack_require__.r(__webpack_exports__);
       message: '',
       chats: {
         message: []
-      }
+      },
+      user: null,
+      isTyping: false,
+      name: null
     };
   },
   methods: {
@@ -5237,10 +5240,11 @@ __webpack_require__.r(__webpack_exports__);
         console.log(this.message);
         this.chats.message.push({
           message: this.message,
-          position: 'right'
+          position: 'right',
+          user: this.user
         }); // myself
 
-        // Send AJAX on the ChatEvent
+        // Send AJAX on the /send route to fire ChatEvent
         axios.post('/send', {
           message: this.message
         }).then(function (response) {
@@ -5255,24 +5259,46 @@ __webpack_require__.r(__webpack_exports__);
   mounted: function mounted() {
     var _this2 = this;
     // Listen to channel `chat` of `ChatEvent` Class from Laravel.
-
+    // Listen if ChatEvent is fired from /send route.
     Echo["private"]("chat").listen('ChatEvent', function (e) {
       _this2.chats.message.push({
         message: e.message,
-        position: 'left'
+        position: 'left',
+        user: e.user
       }); // broadcasted to other person
 
       console.log('broadcasted');
+    }).listenForWhisper('typing', function (e) {
+      // Listen and receive the fired whisper `typing`
+
+      // This will be broadcasted to other person that you are typing or not.
+
+      console.log('Other person is typing');
+
+      // If you typing, then this will be broadcasted to the other person's component that you are typing a message.
+      if (e.messageLength > 0) {
+        _this2.isTyping = true;
+        _this2.name = e.name; // This is your name that will sent to other person
+      } else {
+        _this2.isTyping = false; // Is Not Typing
+        _this2.name = null;
+      }
+    });
+
+    // get the current user
+    axios.get('/user').then(function (response) {
+      _this2.user = response.data;
+    })["catch"](function (e) {
+      return console.error(e);
     });
   },
   watch: {
     message: function message(newValue) {
-      // Check for message length
-      if (newValue.length) {
-        console.log('typing');
-      } else {
-        console.log('not typing');
-      }
+      // If message value changes fire a whisper `typing`
+      Echo["private"]("chat").whisper('typing', {
+        name: this.user.name,
+        messageLength: newValue.length
+      });
     }
   }
 });
@@ -5291,7 +5317,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
-  props: ['position']
+  props: ['position', 'user']
 });
 
 /***/ }),
@@ -5313,7 +5339,7 @@ __webpack_require__.r(__webpack_exports__);
   components: {
     Message: _Message_vue__WEBPACK_IMPORTED_MODULE_0__["default"]
   },
-  props: ['chats'],
+  props: ['chats', 'isTyping', 'name'],
   computed: {
     className: function className() {
       var position = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'justify-end';
@@ -5361,13 +5387,21 @@ var render = function render() {
       r: "8",
       fill: "currentColor"
     }
-  })])]), _vm._v(" "), _c("img", {
+  })])]), _vm._v(" "), _vm.user != null ? _c("img", {
     staticClass: "w-10 sm:w-16 h-10 sm:h-16 rounded-full",
     attrs: {
-      src: "https://i.pravatar.cc/150?img=11",
+      src: "https://ui-avatars.com/api/?name=".concat(_vm.user.name),
       alt: ""
     }
-  })]), _vm._v(" "), _vm._m(0)]), _vm._v(" "), _c("div", {
+  }) : _vm._e()]), _vm._v(" "), _c("div", {
+    staticClass: "flex flex-col leading-tight"
+  }, [_c("div", {
+    staticClass: "text-2xl mt-1 flex items-center"
+  }, [_vm.user != null ? _c("span", {
+    staticClass: "text-gray-700 mr-3"
+  }, [_vm._v(_vm._s(_vm.user.name))]) : _vm._e()]), _vm._v(" "), _c("span", {
+    staticClass: "text-lg text-gray-600"
+  }, [_vm._v("Online")])])]), _vm._v(" "), _c("div", {
     staticClass: "flex items-center space-x-2"
   }, [_c("button", {
     staticClass: "inline-flex items-center justify-center rounded-lg border h-10 w-10 transition duration-500 ease-in-out text-gray-500 hover:bg-gray-300 focus:outline-none",
@@ -5431,7 +5465,9 @@ var render = function render() {
     }
   })])])])]), _vm._v(" "), _c("Messages", {
     attrs: {
-      chats: _vm.chats
+      chats: _vm.chats,
+      isTyping: _vm.isTyping,
+      name: _vm.name
     }
   }), _vm._v(" "), _c("div", {
     staticClass: "border-t-2 border-gray-200 px-4 pt-4 mb-2 sm:mb-0"
@@ -5573,19 +5609,7 @@ var render = function render() {
     }
   })])])])])])], 1);
 };
-var staticRenderFns = [function () {
-  var _vm = this,
-    _c = _vm._self._c;
-  return _c("div", {
-    staticClass: "flex flex-col leading-tight"
-  }, [_c("div", {
-    staticClass: "text-2xl mt-1 flex items-center"
-  }, [_c("span", {
-    staticClass: "text-gray-700 mr-3"
-  }, [_vm._v("Anderson Vanhron")])]), _vm._v(" "), _c("span", {
-    staticClass: "text-lg text-gray-600"
-  }, [_vm._v("Junior Developer")])]);
-}];
+var staticRenderFns = [];
 render._withStripped = true;
 
 
@@ -5614,13 +5638,13 @@ var render = function render() {
     staticClass: "flex flex-col space-y-2 text-xs max-w-xs mx-2 order-1 items-end"
   }, [_c("div", [_c("span", {
     staticClass: "px-4 py-2 rounded-lg inline-block rounded-br-none bg-blue-600 text-white"
-  }, [_vm._t("default")], 2)])]), _vm._v(" "), _c("img", {
+  }, [_vm._t("default")], 2)])]), _vm._v(" "), _vm.user ? _c("img", {
     staticClass: "w-6 h-6 rounded-full order-2",
     attrs: {
-      src: "https://images.unsplash.com/photo-1590031905470-a1a1feacbb0b?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=3&w=144&h=144",
+      src: "https://ui-avatars.com/api/?name=".concat(_vm.user.name),
       alt: "My profile"
     }
-  })])])]) : _c("div", [_c("div", {
+  }) : _vm._e()])])]) : _c("div", [_c("div", {
     staticClass: "chat-message"
   }, [_c("div", {
     staticClass: "flex items-end"
@@ -5628,13 +5652,13 @@ var render = function render() {
     staticClass: "flex flex-col space-y-2 text-xs max-w-xs mx-2 order-2 items-start"
   }, [_c("div", [_c("span", {
     staticClass: "px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600"
-  }, [_vm._t("default")], 2)])]), _vm._v(" "), _c("img", {
+  }, [_vm._t("default")], 2)])]), _vm._v(" "), _vm.user ? _c("img", {
     staticClass: "w-6 h-6 rounded-full order-1",
     attrs: {
-      src: "https://images.unsplash.com/photo-1549078642-b2ba4bda0cdb?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=3&w=144&h=144",
+      src: "https://ui-avatars.com/api/?name=".concat(_vm.user.name),
       alt: "My profile"
     }
-  })])])]);
+  }) : _vm._e()])])]);
 };
 var staticRenderFns = [];
 render._withStripped = true;
@@ -5666,14 +5690,26 @@ var render = function render() {
     attrs: {
       id: "messages"
     }
-  }, _vm._l(_vm.chats.message, function (chat, index) {
+  }, [_vm._l(_vm.chats.message, function (chat, index) {
     return _c("Message", {
       key: index,
       attrs: {
-        position: chat.position
+        position: chat.position,
+        user: chat.user
       }
-    }, [_vm._v("\n        " + _vm._s(chat.message) + "\n    ")]);
-  }), 1);
+    }, [_c("span", {
+      attrs: {
+        title: "Mon, 3:19 PM"
+      }
+    }, [_vm._v(_vm._s(chat.message))])]);
+  }), _vm._v(" "), _vm.isTyping && _vm.name != null ? _c("div", [_c("Message", {
+    attrs: {
+      position: "left",
+      user: {
+        name: _vm.name
+      }
+    }
+  }, [_c("i", [_vm._v(_vm._s(_vm.name) + " is typing...")])])], 1) : _vm._e()], 2);
 };
 var staticRenderFns = [];
 render._withStripped = true;
