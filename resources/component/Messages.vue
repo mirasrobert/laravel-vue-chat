@@ -3,8 +3,8 @@
             class="flex flex-col space-y-4 p-3 overflow-y-auto scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch" v-chat-scroll>
 
             <!-- Show Messages -->
-            <Message :position="chat.position" :user="chat.user" v-for="(chat, index) in chats.message" :key="index">
-                <span title="Mon, 3:19 PM">{{ chat.message }}</span>
+            <Message :position="msg.user.name === currentUser.name ? 'right' : 'left' " :user="msg.user" v-for="(msg, index) in messages" :key="index">
+                <span :title="formatDate(msg.created_at)">{{ msg.content }}</span>
             </Message>
 
             <!-- Show Typing Indicator -->
@@ -18,16 +18,17 @@
 </template>
 
 <script>
+    import moment from 'moment';
     import Message from './Message.vue';
     export default {
         components: {
             Message
         },
-        props: ['chats', 'isTyping', 'name'],
-        computed: {
-            className(position = 'justify-end') {
-                return `flex items-end ${position}`
-            }
+
+        props: ['messages', 'isTyping', 'name', 'currentUser'],
+
+        methods: {
+            formatDate(dateTime) { return moment(dateTime).format('MMM D, YYYY, h:mm A'); }
         }
     }
 </script>

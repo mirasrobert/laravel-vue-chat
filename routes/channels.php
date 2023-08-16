@@ -19,14 +19,14 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 // Authorize Private Channel
-Broadcast::channel('chat', function () {
-    return true;
-});
-
-// Broadcast::channel('chat.room.{id}', function ($user, $id) {
-//     // Authorize users based on the chat room.
-//     // For example, you could check if the user is a participant of the chat room.
-
-//     $chatRoom = ChatRoom::find($id);
-//     return $chatRoom->participants->contains($user); // Check if user is participant of that chatroom
+// Broadcast::channel('chat', function () {
+//     return true;
 // });
+
+Broadcast::channel('chat.room.{id}', function ($user, $id) {
+    // Authorize users based on the chat room.
+    // For example, you could check if the user is a participant of the chat room.
+
+    $chatRoom = ChatRoom::find($id);
+    return $chatRoom->participants->contains('user_id', $user->id); // Check if user is participant of that chatroom
+});

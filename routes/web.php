@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\MessageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,9 +25,15 @@ Route::get('/dashboard', function () {
 
 require __DIR__.'/auth.php';
 
-Route::get('chat', [ChatController::class, 'index'])->middleware('auth');
-Route::post('/send', [ChatController::class, 'send']);
+Route::get('chat/{id?}', [ChatController::class, 'index'])->middleware('auth');
 
-Route::get('/user', function () {
+// Get authenticated user
+Route::get('/api/user', function () {
     return response()->json(auth()->user());
 })->middleware('auth');
+
+// Get All Messages
+Route::get('/api/messages/{chatRoomId?}', [MessageController::class, 'index'])->middleware('auth');
+
+// Send a event and save message
+Route::post('/api/send', [ChatController::class, 'send'])->middleware('auth');

@@ -16,16 +16,7 @@
 
     <main id="app">
 
-        <div class="container mx-auto px-4">
-            <h1>Chat Room</h1>
-        </div>
-
-        <Chat />
-
-        <!-- -->
-
-
-
+        <Chat :chat-room-id="1" />
 
     </main>
 

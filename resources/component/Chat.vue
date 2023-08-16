@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <Messages :chats="chats" :isTyping="isTyping" :name="name" />
+        <Messages :currentUser="user" :messages="messages" :isTyping="isTyping" :name="name" />
 
         <div class="border-t-2 border-gray-200 px-4 pt-4 mb-2 sm:mb-0">
             <div class="relative flex">
@@ -97,6 +97,7 @@
                         </svg>
                     </button>
                     <button type="button"
+                        @click="send"
                         class="inline-flex items-center justify-center rounded-lg px-4 py-3 transition duration-500 ease-in-out text-white bg-blue-500 hover:bg-blue-400 focus:outline-none">
                         <span class="font-bold">Send</span>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
@@ -120,12 +121,12 @@
             Messages
         },
 
+        props: ['chatRoomId'],
+
         data() {
             return {
                 message: '',
-                chats: {
-                    message: []
-                },
+                messages: [],
                 user: null,
                 isTyping: false,
                 name: null
@@ -137,15 +138,17 @@
                 if (this.message.length > 0) {
                     console.log(this.message)
 
-                    this.chats.message.push({
-                        message: this.message,
+                    this.messages.push({
+                        content: this.message, // MESSAGE CONTENT
                         position: 'right',
                         user: this.user
                     }) // myself
 
                     // Send AJAX on the /send route to fire ChatEvent
-                    axios.post('/send', {
-                            message: this.message
+                    axios.post('/api/send', {
+                            message: this.message,
+                            chat_room_id: this.chatRoomId,
+
                         })
                         .then(response => {
                             console.log('send ajax to event')
@@ -162,13 +165,13 @@
         },
         mounted() {
 
-            // Listen to channel `chat` of `ChatEvent` Class from Laravel.
-            // Listen if ChatEvent is fired from /send route.
-            Echo.private(`chat`)
+            // 1. Listen to channel `chat` of `ChatEvent` Class from Laravel.
+            // -- Listen if ChatEvent is fired from /send route.
+            Echo.private(`chat.room.${this.chatRoomId}`)
                 .listen('ChatEvent', (e) => {
 
-                    this.chats.message.push({
-                        message: e.message,
+                    this.messages.push({
+                        content: e.message,
                         position: 'left',
                         user: e.user
                     }) // broadcasted to other person
@@ -193,27 +196,32 @@
 
                 });
 
-            // get the current user
-            axios.get('/user')
+            // 2. Get the current user
+            axios.get('/api/user')
                 .then(response => {
                     this.user = response.data
                 })
-                .catch(e => console.error(e))
+                .catch(e => console.error(e));
 
+            // 3. Load all messages
+            axios.get(`/api/messages/${this.chatRoomId}`)
+                .then(response => {
+                    this.messages = response.data;
+                })
+                .catch(e => console.error(e));
 
         },
         watch: {
             message(newValue) {
 
                 // If message value changes fire a whisper `typing`
-                Echo.private(`chat`)
+                Echo.private(`chat.room.${this.chatRoomId}`)
                     .whisper('typing', {
                         name: this.user.name,
                         messageLength: newValue.length
                     });
             }
         }
-
 
     }
 </script>
