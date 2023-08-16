@@ -26,3 +26,7 @@ require __DIR__.'/auth.php';
 
 Route::get('chat', [ChatController::class, 'index'])->middleware('auth');
 Route::post('/send', [ChatController::class, 'send']);
+
+Route::get('/user', function () {
+    return response()->json(auth()->user());
+})->middleware('auth');

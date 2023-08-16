@@ -21,7 +21,11 @@ class ChatController extends Controller
 
         event(new ChatEvent($message, $user));
 
+        // $user = User::find(auth()->id());
+        // $message = $request->input('message');
+        // $chatRoomId = $request->input('chat_room_id'); // Coming from vue js
+
+        // event(new ChatEvent($message, $user, $chatRoomId));
 
     }
-
 }

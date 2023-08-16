@@ -2,11 +2,17 @@
         <div id="messages"
             class="flex flex-col space-y-4 p-3 overflow-y-auto scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch" v-chat-scroll>
 
-
-            <Message :position="chat.position" v-for="(chat, index) in chats.message" :key="index">
-                {{ chat.message }}
+            <!-- Show Messages -->
+            <Message :position="chat.position" :user="chat.user" v-for="(chat, index) in chats.message" :key="index">
+                <span title="Mon, 3:19 PM">{{ chat.message }}</span>
             </Message>
 
+            <!-- Show Typing Indicator -->
+            <div v-if="isTyping && name != null">
+                <Message position="left" :user="{ name: name }">
+                    <i>{{ name }} is typing...</i>
+                </Message>
+            </div>
 
         </div>
 </template>
@@ -17,7 +23,7 @@
         components: {
             Message
         },
-        props: ['chats'],
+        props: ['chats', 'isTyping', 'name'],
         computed: {
             className(position = 'justify-end') {
                 return `flex items-end ${position}`
